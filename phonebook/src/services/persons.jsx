@@ -13,7 +13,14 @@ const create = (newObject) => {
 
 const update = (id, newObject) => {
   const request = axios.put(`${baseUrl}/${id}`, newObject);
-  return request.then((response) => response.data);
+  return request
+    .then((response) => response.data)
+    .catch((error) => {
+      throw new Error(
+        `Information of ${newObject.name} has already been removed from server`,
+        error
+      );
+    });
 };
 const deletePerson = (id) => {
   const request = axios.delete(`${baseUrl}/${id}`);

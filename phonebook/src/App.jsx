@@ -2,14 +2,18 @@ import { useState, useEffect } from "react";
 import Filter from "./components/Filter";
 import PersonForm from "./components/PersonForm";
 import Persons from "./components/Persons";
-import axios from "axios";
+import Notification from "./components/Notification";
+import Error from "./components/Error";
 import personService from "./services/persons";
+import "./App.css";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNumber] = useState("");
   const [searchName, setSearchName] = useState("");
+  const [succeedNotification, setSucceedNotification] = useState(null);
+  const [errorNotification, setErrorNotification] = useState(null);
 
   useEffect(() => {
     personService.getAll().then((persons) => {
@@ -31,27 +35,56 @@ const App = () => {
           `${newPerson.name} is already added to phonebook, replace the old number with a new one?`
         )
       ) {
-        const targetPerson = persons.find(persons.name === newPerson.name);
+        const targetPerson = persons.find(
+          (person) => person.name === newPerson.name
+        );
         const id = targetPerson.id;
-        personService.update(newPerson, id).then((updated) => {
-          setPersons(
-            persons.map((person) => (person.id !== id ? person : updated))
-          );
-        });
+        personService
+          .update(id, newPerson)
+          .then((updated) => {
+            setPersons(
+              persons.map((person) => (person.id == id ? updated : person))
+            );
+            setSucceedNotification(`${targetPerson.name} is updated`);
+            setTimeout(() => {
+              setSucceedNotification(null);
+            }, 5000);
+          })
+          .catch((error) => {
+            setErrorNotification(`${error.message}`);
+            setTimeout(() => {
+              setErrorNotification(null);
+            }, 5000);
+          });
       }
     } else {
-      personService.create(newPerson).then((person) => {
-        setPersons(persons.concat(person));
-      });
+      personService
+        .create(newPerson)
+        .then((person) => {
+          setPersons(persons.concat(person));
+          setSucceedNotification(`Added ${person.name}`);
+          setTimeout(() => {
+            setSucceedNotification(null);
+          }, 5000);
+        })
+        .catch((error) => {
+          console.error("Failed to create person", error);
+        });
     }
     setNewName("");
     setNumber("");
   };
+
   const handleDeletePerson = (id, name) => {
     if (window.confirm(`Delete ${name}?`)) {
-      personService.deletePerson(id).then(() => {
-        setPersons(persons.filter((person) => person.id !== id));
-      });
+      personService
+        .deletePerson(id)
+        .then(() => {
+          setPersons(persons.filter((person) => person.id !== id));
+        })
+        .catch((error) => {
+          console.error("Failed to delete person", error);
+        });
     }
   };
 
@@ -64,6 +97,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={succeedNotification} />
+      <Error message={errorNotification} />
       <Filter searchName={searchName} setSearchName={setSearchName} />
 
       <h2>Add a new</h2>
