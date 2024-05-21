@@ -52,6 +52,7 @@ const App = () => {
           })
           .catch((error) => {
             setErrorNotification(`${error.message}`);
+            setPersons(persons.filter((person) => person.id !== id));
             setTimeout(() => {
               setErrorNotification(null);
             }, 5000);
